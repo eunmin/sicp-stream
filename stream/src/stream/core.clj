@@ -15,8 +15,8 @@
         @result))))
 
 (defmacro delay [exp]
-  `(fn []
-     ~exp))
+  `(memo-proc (fn []
+                ~exp)))
 
 (defn force [exp]
   (exp))
@@ -59,6 +59,36 @@
                                             (stream-filter pred
                                                            (stream-cdr stream)))
     :else (stream-filter pred (stream-cdr stream))))
+
+;; 3.51
+(defn show [x]
+  (println x)
+  x)
+
+(def x (stream-map show (stream-enumerate-interval 0 10)))
+
+(stream-ref x 5)
+
+(stream-ref x 7)
+
+;; 3.52
+(def sum (atom 0))
+
+(defn accum [x]
+  (swap! sum inc)
+  @sum)
+
+(def seq (stream-map accum (stream-enumerate-interval 1 20)))
+
+(def y (stream-filter even? seq))
+
+(def z (stream-filter (fn [x]
+                        (= (mod x 5) 0))
+                      seq))
+
+(stream-ref y 7)
+
+(display-stream z)
 
 (defn stream-for-each [proc s]
   (if (stream-null? s)
@@ -142,4 +172,13 @@
 (defn mul-streams [s1 s2]
   (stream-map * s1 s2))
 
-(def factorials (cons-stream 1 (mul-streams (stream-cdr factorials) factorials)))
+(def factorials (cons-stream 1 (mul-streams factorials (integers-starting-from 2))))
+
+(stream-ref factorials 10)
+
+;; 3.55
+(defn partial-sums [s]
+  (cons-stream (stream-car s) (add-streams (stream-cdr s) (partial-sums s))))
+
+(stream-ref (partial-sums integers) 4)
+
