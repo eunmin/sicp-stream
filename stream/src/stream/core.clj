@@ -195,3 +195,59 @@
 (def S (cons-stream 1 (merge (scale-stream S 2)
                              (merge (scale-stream S 3)
                                     (scale-stream S 5)))))
+
+;; 1.1.7
+(defn good-enough? [guess x]
+  (< (Math/abs (- (* guess guess) x)) 0.001))
+
+(defn average [x y]
+  (/ (+ x y) 2))
+
+(defn improve [guess x]
+  (average guess (/ x guess)))
+
+(defn sqrt-iter [guess x]
+  (if (good-enough? guess x)
+    guess
+    (sqrt-iter (improve guess x) x)))
+
+(defn sqrt [x]
+  (sqrt-iter 1.0 x))
+
+(sqrt 9)
+
+;; 3.4.3
+
+(defn sqrt-improve [guess x]
+  (average guess (/ x guess)))
+
+(defn sqrt-stream [x]
+  (def guesses (cons-stream 1.0
+                            (stream-map (fn [guess]
+                                          (sqrt-improve guess x))
+                                        guesses)))
+  guesses)
+
+(stream-ref (sqrt-stream 9) 6)
+
+;; 3.5.5
+(defn make-simplified-withdraw [init-balance]
+  (let [balance (atom init-balance)]
+    (fn [amount]
+      (swap! balance #(- % amount))
+      @balance)))
+
+(def withdraw (make-simplified-withdraw 100))
+(withdraw 10)
+(withdraw 11)
+(withdraw 12)
+
+(defn stream-withdraw [balance amount-stream]
+  (cons-stream
+   balance
+   (stream-withdraw (- balance (stream-car amount-stream))
+                    (stream-cdr amount-stream))))
+
+(stream-ref (stream-withdraw 100 (stream-enumerate-interval 10 12)) 3)
+
+;; Object 방식은 Object가 함께 쓰는 상태가 적을 때 쓸모가 많다.
